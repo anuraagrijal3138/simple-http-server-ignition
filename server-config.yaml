@@ -1,0 +1,15 @@
+0c:c4:7a:7d:db:ae:
+- eth0:
+    hostname: kubevirt-node-6
+    ip_address: 172.26.20.206/24
+    gateway: 172.26.20.1
+    mac_address: 0c:c4:7a:7d:db:ae
+- eth1:
+    mac_address: 90:e2:ba:7c:3c:08
+- eth2:
+    mac_address: 90:e2:ba:7c:3c:09
+- team0:
+    ip_address: 172.26.120.206/24
+    gateway: 172.26.120.1
+
+

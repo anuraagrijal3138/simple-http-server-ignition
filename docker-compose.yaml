@@ -1,0 +1,17 @@
+version: '3.5'
+services:
+  ignition_web_server:
+    environment:
+    - PYTHONUNBUFFERED=1
+    - PYTHONIOENCODING=UTF-8
+    build: .
+    hostname: ignition_web_server
+    container_name: ign
+    volumes:
+    - ./config.fcc:/usr/src/app/config.fcc
+    - ./server-config.yaml:/usr/src/app/server-config.yaml
+    privileged: true
+    ports:
+    - 8000:8000
+    restart: unless-stopped
+    network_mode: "host"

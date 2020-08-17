@@ -1,0 +1,384 @@
+variant: fcos
+version: 1.0.0
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCwafgSFP3Xpi5Shu6lYxFN77PoX49SRjROyZ6ZLIvrqCEcQuVGIZdGOIW83oyXX1NK4arRla7lBNtFAWRYfel9pEl/CCJ0pI4/m+jt1+ymaUa9zo3fTa20nIQW667QB2pUccbUQYKwL8Z3JctWLIXWqb/IMXFskgpKiSnH6wTm681i25kvWIrlyJUQ4yrbMaP3lgxQxBbY1sfo/pBuw4aOUHtJn4dvxZf1/vSYA6TphMzRSfFJBDw0k+CmcdqZV2U8F2m9UVc5EA+xK1XqWM0p510BZLuB/OVCGoh9uL25+OhgJ6LvyPwjKgWcJshg9GQb16llPx5lFcKoRwzU7byB home@home
+    - name: aib-user
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCwafgSFP3Xpi5Shu6lYxFN77PoX49SRjROyZ6ZLIvrqCEcQuVGIZdGOIW83oyXX1NK4arRla7lBNtFAWRYfel9pEl/CCJ0pI4/m+jt1+ymaUa9zo3fTa20nIQW667QB2pUccbUQYKwL8Z3JctWLIXWqb/IMXFskgpKiSnH6wTm681i25kvWIrlyJUQ4yrbMaP3lgxQxBbY1sfo/pBuw4aOUHtJn4dvxZf1/vSYA6TphMzRSfFJBDw0k+CmcdqZV2U8F2m9UVc5EA+xK1XqWM0p510BZLuB/OVCGoh9uL25+OhgJ6LvyPwjKgWcJshg9GQb16llPx5lFcKoRwzU7byB home@home
+      groups: [ sudo, docker ]
+storage:
+  disks:
+  - device: /dev/sda
+    wipe_table: false
+    partitions:
+    - size_mib: 102400
+      label: var
+    - size_mib: 665600
+      label: docker
+    - size_mib: 20480
+      label: varlog
+    - size_mib: 20480
+      label: vartmp
+    - size_mib: 40960
+      label: varhome
+  filesystems:
+  - path: /var
+    device: /dev/disk/by-partlabel/var
+    format: ext4
+  - path: /var/lib/docker
+    device: /dev/disk/by-partlabel/docker
+    format: ext4
+  - path: /var/log
+    device: /dev/disk/by-partlabel/varlog
+    format: ext4
+  - path: /var/tmp
+    device: /dev/disk/by-partlabel/vartmp
+    format: ext4
+  - path: /var/home
+    device: /dev/disk/by-partlabel/varhome
+    format: ext4
+  files:
+  - path: "/etc/hostname"
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: hostname_node
+    user:
+      # The owner uid and group are defined by their numerical IDs.
+      id: 0
+    group:
+      id: 0
+  - path: /etc/NetworkManager/system-connections/eno1.nmconnection
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        [connection]
+        type=ethernet
+        interface-name=eno1
+
+        [ethernet]
+        mac-address= macaddress_eth0
+
+        [ipv4]
+        method=manual
+        addresses=ipaddress_eth0
+        gateway=gateway_eth0
+        dns=8.8.8.8
+  - path: /etc/NetworkManager/system-connections/team0.nmconnection
+    mode: 0600
+    contents:
+      inline: |
+        [connection]
+        id=team0
+        type=team
+        interface-name=team0
+
+        [ipv4]
+        method=manual
+        addresses=ipaddress_team0
+        gateway=gateway_team0
+        dns=8.8.8.8
+
+        [team]
+        config={"runner": {"name": "lacp", "active": true, "fast_rate": true,"tx_hash": ["eth", "ipv4", "ipv6"]}, "link_watch": {"name": "ethtool"}}
+  - path: /etc/NetworkManager/system-connections/team0-slave-enp4s0f0.nmconnection
+    mode: 0600
+    contents:
+      inline: |
+        [connection]
+        id=team0-slave-enp4s0f0
+        type=ethernet
+        interface-name=enp4s0f0
+        master=team0
+        slave-type=team
+
+        [ethernet]
+        mac-address= macaddress_eth1
+
+        [team-port]
+        config={"prio": 100}
+  - path: /etc/NetworkManager/system-connections/team0-slave-enp4s0f1.nmconnection
+    mode: 0600
+    contents:
+      inline: |
+        [connection]
+        id=team0-slave-enp4s0f1
+        type=ethernet
+        interface-name=enp4s0f1
+        master=team0
+        slave-type=team
+
+        [ethernet]
+        mac-address= macaddress_eth2
+
+        [team-port]
+        config={"prio": 100}
+  - path: /etc/issue.net
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        ###############################################################
+        # All connections are monitored and recorded                  #
+        # Disconnect IMMEDIATELY if you are not an authorized user!   #
+        ###############################################################
+  - path: /etc/motd
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        ###############################################################
+        Welcome to AIB
+
+        UNAUTHORIZED ACCESS TO THIS DEVICE IS PROHIBITED
+        You must have explicit, authorized permission to access or 
+        configure this device. Unauthorized attempts and actions to 
+        access or use this system may result in civil and/or criminal 
+        penalties. All activities performed on this device are logged 
+        and monitored
+
+        Disconnect IMMEDIATELY if you are not an authorized user!
+        ###############################################################
+  - path: /etc/ssh/sshd_config.d/80-aib.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        ClientAliveInterval 300
+        ClientAliveCountMax 0
+        Protocol 2
+        LogLevel INFO
+        X11Forwarding no
+        MaxAuthTries 4
+        IgnoreRhosts yes
+        HostbasedAuthentication no
+        PermitRootLogin no
+        PermitEmptyPasswords no
+        PermitUserEnvironment no
+        MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com
+        LoginGraceTime 60
+        Banner /etc/issue.net
+  - path: /etc/sysctl.d/99-aib.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        fs.suid_dumpable = 0
+        net.ipv4.conf.all.accept_source_route = 0
+        net.ipv4.conf.default.accept_source_route = 0
+        net.ipv6.conf.all.accept_source_route = 0
+        net.ipv6.conf.default.accept_source_route = 0
+        net.ipv4.conf.all.accept_redirects = 0
+        net.ipv4.conf.default.accept_redirects = 0
+        net.ipv6.conf.all.accept_redirects = 0
+        net.ipv6.conf.default.accept_redirects = 0
+        net.ipv4.conf.all.secure_redirects = 0
+        net.ipv4.conf.default.secure_redirects = 0
+        net.ipv4.conf.all.log_martians = 1
+        net.ipv4.conf.default.log_martians = 1
+        net.ipv4.icmp_echo_ignore_broadcasts = 1
+        net.ipv4.icmp_ignore_bogus_error_responses = 1
+        net.ipv4.conf.default.rp_filter=1
+        net.ipv4.conf.all.rp_filter=1
+        net.ipv4.tcp_syncookies = 1
+        net.ipv6.conf.all.accept_ra = 0
+        net.ipv6.conf.default.accept_ra = 0
+  - path: /etc/zincati/config.d/90-disable-auto-updates.toml
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        [updates]
+        enabled = false
+  - path: /etc/modprobe.d/cramfs.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install cramfs /bin/true
+  - path: /etc/modprobe.d/freevxfs.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install freevxfs /bin/true
+  - path: /etc/modprobe.d/jffs2.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install jffs2 /bin/true
+  - path: /etc/modprobe.d/hfs.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install hfs /bin/true
+  - path: /etc/modprobe.d/hfsplus.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install hfsplus /bin/true
+  - path: /etc/modprobe.d/squashfs.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install squashfs /bin/true
+  - path: /etc/modprobe.d/udf.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install udf /bin/true
+  - path: /etc/modprobe.d/dccp.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install dccp /bin/true
+  - path: /etc/modprobe.d/sctp.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install sctp /bin/true
+  - path: /etc/modprobe.d/rds.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install rds /bin/true
+  - path: /etc/modprobe.d/tipc.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: install tipc /bin/true
+  - path: /etc/security/limits.conf
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        * hard core 0
+  - path: /etc/passwd
+    mode: 0644
+    overwrite: false
+  - path: /etc/shadow
+    mode: 0600
+    overwrite: false
+  - path: /etc/group
+    mode: 0644
+    overwrite: false
+  - path: /etc/gshadow
+    mode: 0640
+    overwrite: false
+  - path: /etc/passwd-
+    mode: 0644
+    overwrite: false
+  - path: /etc/shadow-
+    mode: 0640
+    overwrite: false
+  - path: /etc/group-
+    mode: 0644
+    overwrite: false
+  - path: /etc/gshadow-
+    mode: 0640
+    overwrite: false
+  - path: /usr/local/bin/aib-cis-security
+    mode: 0755
+    overwrite: true
+    contents:
+      inline: |
+        #!/bin/sh
+
+        mount -o remount,nodev,nosuid,noexec /var/tmp
+        mount -o remount,nodev /home
+        mount -o remount,nodev,nosuid,noexec /dev/shm
+systemd:
+  units:
+  - name: aib-cis-security.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=AIB CIS Security
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      TimeoutStartSec=0
+      ExecStart=/usr/local/bin/aib-cis-security
+
+      [Install]
+      WantedBy=multi-user.target
+  - name: var.mount
+    enabled: true
+    contents: |
+      [Unit]
+      Before=local-fs.target
+
+      [Mount]
+      Where=/var
+      What=/dev/disk/by-partlabel/var
+      Type=ext4
+
+      [Install]
+      WantedBy=local-fs.target
+  - name: var-lib-docker.mount
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Mount ephemeral to /var/lib/docker
+      Before=local-fs.target
+
+      [Mount]
+      What=/dev/disk/by-partlabel/docker
+      Where=/var/lib/docker
+      Type=ext4
+
+      [Install]
+      WantedBy=local-fs.target
+  - name: docker.service
+    dropins:
+    - name: 10-wait-docker.conf
+      contents: |
+        [Unit]
+        After=var-lib-docker.mount
+        Requires=var-lib-docker.mount
+  - name: var-log.mount
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Mounting /var/log
+
+      [Mount]
+      Where=/var/log
+      What=/dev/disk/by-partlabel/varlog
+      Type=ext4
+
+      [Install]
+      WantedBy=multi-user.target
+  - name: var-tmp.mount
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Mounting /var/tmp
+
+      [Mount]
+      Where=/var/tmp
+      What=/dev/disk/by-partlabel/vartmp
+      Type=ext4
+
+      [Install]
+      WantedBy=multi-user.target
+  - name: var-home.mount
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Mounting /var/home
+
+      [Mount]
+      Where=/var/home
+      What=/dev/disk/by-partlabel/varhome
+      Type=ext4
+      
+      [Install]
+      WantedBy=multi-user.target  
+   
+  
+
