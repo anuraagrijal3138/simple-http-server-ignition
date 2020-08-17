@@ -44,7 +44,7 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
       f1.close()
       f2.close()
 
-      os.system('/usr/src/app/fcct --pretty --strict /usr/src/app/config2.fcc > ignition.ign')
+      os.system('/usr/src/app/fcct --pretty --strict /usr/src/app/config.fcc > ignition.ign')
     
       if self.path == '/config.ign':
         self.path = 'ignition.ign'
